@@ -19,12 +19,12 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 
 async function run() {
     try {
-        const AddTaskCollection = client.db('Taskque').collection('addTasks');
+        const tasksCollection = client.db('Taskque').collection('addTasks');
 
         //* add a task
         app.post('/addTask', async (req, res) => {
             const task = req.body;
-            const result = await AddTaskCollection.insertOne(task);
+            const result = await tasksCollection.insertOne(task);
             res.send(result);
         })
 
@@ -32,7 +32,7 @@ async function run() {
         app.get('/task/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: ObjectId(id) };
-            const task = await AddTaskCollection.findOne(query);
+            const task = await tasksCollection.findOne(query);
             res.send(task)
         })
 
@@ -40,25 +40,25 @@ async function run() {
         app.get('/myTask', async (req, res) => {
             const email = req.query.email;
             const query = { userEmail: email };
-            const myTasks = await AddTaskCollection.find(query).toArray();
+            const myTasks = await tasksCollection.find(query).toArray();
             res.send(myTasks);
         })
 
 
         //* update a task
         app.patch('/updatedTask/:id', async (req, res) => {
-            const updatedTask = req.body;
+            const task = req.body;
             const id = req.params.id;
             const filter = { _id: ObjectId(id) };
             const options = { upsert: true };
-            const updatedDoc = {
+            const updatedTask = {
                 $set: {
-                    taskTitle: updatedTask.taskTitle,
-                    taskDetail: updatedTask.taskDetail,
-                    taskImage: updatedTask.taskImage
+                    taskTitle: task.taskTitle,
+                    taskDetail: task.taskDetail,
+                    taskImage: task.taskImage
                 }
             };
-            const result = await AddTaskCollection.updateOne(filter, updatedDoc, options);
+            const result = await tasksCollection.updateOne(filter, updatedTask, options);
             res.send(result)
         })
 
@@ -66,8 +66,42 @@ async function run() {
         app.delete('/deleteTask/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: ObjectId(id) }
-            const result = await AddTaskCollection.deleteOne(query);
+            const result = await tasksCollection.deleteOne(query);
             res.send(result);
+        })
+
+        //* add status on completed task
+        app.patch('/completedTask', async (req, res) => {
+            const id = req.query.id;
+            const status = req.query.status;
+            const filter = { _id: ObjectId(id) };
+            const options = { upsert: true };
+            const completedTask = {
+                $set: {
+                    status
+                }
+            };
+            const result = await tasksCollection.updateOne(filter, completedTask, options);
+            res.send(result);
+        })
+
+        //* load completed task using user email
+        app.get('/completedTask/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) }
+            const completedTask = await tasksCollection.findOne(query);
+            res.send({ completedStatus: completedTask?.status });
+        })
+
+        //* load completed tasks using user email and status
+        app.get('/completedTasks', async (req, res) => {
+            const email = req.query.email;
+            const query = {
+                userEmail: email,
+                status: 'completed'
+            }
+            const completedTasks = await tasksCollection.find(query).toArray();
+            res.send(completedTasks);
         })
 
 
