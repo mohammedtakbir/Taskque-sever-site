@@ -14,7 +14,6 @@ app.get('/', (req, res) => {
 })
 
 
-
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.drjbcpx.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
@@ -27,6 +26,14 @@ async function run() {
             const task = req.body;
             const result = await AddTaskCollection.insertOne(task);
             res.send(result);
+        })
+
+        //* get tasks using email
+        app.get('/myTask', async (req, res) => {
+            const email = req.query.email;
+            const query = { userEmail: email };
+            const myTasks = await AddTaskCollection.find(query).toArray();
+            res.send(myTasks);
         })
     }
     finally {
